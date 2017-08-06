@@ -1,0 +1,28 @@
+select id, year from productions 
+where title~'Harry Potter' AND attr is null AND year > 2011;
+
+select id, character from roles 
+where id in 
+(select id from productions where attr is null AND year < 1980) 
+AND pid~'Streep, Meryl';
+
+select id, character, billing from roles 
+where pid~'Eastwood, Clint' AND id in 
+(select id from directors where pid~'Leone, Sergio');
+
+select id from roles 
+where pid~'Nimoy, Leonard' AND id in 
+(select id from roles where pid~'Hawking, Stephen');
+
+select id, pid, character from roles 
+where pid in 
+(select pid from roles where id in 
+(select id from productions where year = 1999 AND id ~'^The Matrix') 
+intersect select pid from roles 
+where id in 
+(select id from productions where year = 2003 AND id ~'^The Matrix Reloaded')) 
+AND id in
+(select id from productions 
+where year = 1999 AND attr is null AND id ~'The Matrix' 
+union select id from productions 
+where year = 2003 AND attr is null AND id ~'The Matrix Reloaded ');

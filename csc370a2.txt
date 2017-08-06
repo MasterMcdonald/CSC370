@@ -1,0 +1,33 @@
+select distinct country 
+from locations natural join productions natural join episodes 
+on( episodeof ~'Game of Thrones' AND attr = 'TV-ep');
+
+
+select title, year, rank 
+from productions natural join ratings natural join directors 
+where votes > 50000 AND attr is null AND pid~'Hitchcock, Alfred';
+
+
+with R as(
+select title, year, rank, character as paulchar, billing as paulbilling 
+from roles natural join productions natural join ratings 
+where pid ~'Newman, Paul' AND id in (select id from roles where pid~'Redford, Robert')), 
+S as (
+select title, character as robchar, billing as robbilling 
+from roles natural join productions 
+where pid~'Redford, Robert' AND id in (select id from roles where pid~'Newman, Paul')) 
+select title, year, rank, paulchar, paulbilling, robchar, robbilling 
+from R natural join S natural join productions
+where paulchar!~'Himself' AND robchar !~'Himself' AND attr is null;
+
+
+select pid, id, rank from  ratings natural right join directors natural join languages natural join productions 
+where language ~'English' and attr is null and pid in 
+(select distinct pid from directors natural join episodes where episodeof~'Hora Marcada') 
+order by rank desc;
+
+select id as lucas, idlinkedto as kurosawa, relationship from links 
+where id in
+(select id from directors where pid~'Lucas, George') 
+AND idlinkedto in 
+(select id as idlinkedto from directors where pid~'Kurosawa, Akira');

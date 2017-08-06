@@ -1,0 +1,80 @@
+select episodeof, arank, avotes cepisodes, cseasons 
+from as5 
+where arank > 8.5 AND avotes >= 1000 AND cseasons >= 4 
+order by arank desc;
+
+with R as
+(select id, rank, votes 
+from ratings natural join productions 
+where attr is null AND votes >= 50000), 
+S as
+(select max(rank) as rank from R) 
+select title, year, rank, votes 
+from R natural join S natural join productions;
+
+with R as
+(select rank, pid 
+from ratings natural join productions natural join roles 
+where attr is null AND rank >= 8 AND votes >= 50000), 
+S as
+(select pid, count(pid) as cpid, avg(rank) as arank 
+from R group by pid)
+select pid, cpid, arank 
+from R natural join S 
+where cpid >= 10 
+group by pid, cpid, arank 
+order by arank, pid desc;
+
+with R as
+(select pid, id, billing, character 
+from productions natural join ratings natural join roles 
+where attr is null AND rank > 8 AND votes >= 50000),
+S as(select pid, count(pid) as cpid from R group by pid),
+E as(select max(cpid) as cpid from S natural join R)
+select pid, id, billing, character 
+from R natural join S natural join E 
+order by id;
+
+with R as
+(select id, rank, pid 
+from productions natural join ratings natural join directors 
+where attr is null AND votes >= 40000 AND rank > 8.4),
+S as(select pid, count(pid) as total 
+from productions natural join directors natural join ratings 
+where attr is null AND votes >= 40000 group by pid),
+F as(select pid, count(pid) as goodones, avg(rank) as avggoodones from R group by pid),
+K as(select pid, (total-goodones) as rest from S natural join F),
+L as(select id from productions natural join directors natural join ratings 
+where attr is null AND votes >= 40000 EXCEPT select id from R),
+G as(select pid, avg(rank) as avgrest 
+from K natural join productions natural join L natural join ratings natural join directors 
+where attr is null group by pid),
+E as(select pid, total, goodones from S natural join F where total >= 8)
+select pid, (to_char(round(goodones*1000/total)/10,'90.0'))||'%' as prop, total, goodones, to_char(avggoodones, '0.0') as avggoodones, 
+rest, to_char(avgrest,'0.0') as avgrest, to_char(avggoodones-avgrest,'9.0') as diff 
+from S natural join F natural join G natural join E natural join K 
+order by avggoodones-avgrest desc;
+
+Zelan Xiang V00825496
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

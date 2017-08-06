@@ -1,0 +1,104 @@
+create table Parts(
+pid integer,
+pname varchar(40),
+color varchar(20));
+
+insert into Parts(pid, pname, color) values (1, 'a', 'yellow');
+insert into Parts(pid, pname, color) values (2, 'a', 'blue');
+insert into Parts(pid, pname, color) values (3, 'b', 'black');
+insert into Parts(pid, pname, color) values (4, 'a', 'blue');
+insert into Parts(pid, pname, color) values (5, 'a', 'blue');
+insert into Parts(pid, pname, color) values (6, 'c', 'black');
+insert into Parts(pid, pname, color) values (7, 'a', 'black');
+insert into Parts(pid, pname, color) values (8, 'd', 'orange');
+insert into Parts(pid, pname, color) values (9, 'd', 'yellow');
+insert into Parts(pid, pname, color) values (10, 'e', 'red');
+insert into Parts(pid, pname, color) values (11, 'f', 'yellow');
+
+create table partshistory(
+pid integer,
+pname varchar(40),
+color varchar(20),
+operation char,
+opwhen timestamp,
+opuser char(20));
+
+create or replace function insertlogfunc() returns trigger as $inserthistory$
+begin
+insert into partshistory(pid, pname, color, operation, opwhen, opuser) values (new.pid, new.pname, new.color, 'I', current_timestamp, current_user);
+return new;
+end;
+$inserthistory$ language plpgsql;
+
+
+create or replace function updatelogfunc() returns trigger as $updatehistory$
+begin
+insert into partshistory(pid, pname, color, operation, opwhen, opuser) values (new.pid, new.pname, new.color, 'U', current_timestamp, current_user);
+return new;
+end;
+$updatehistory$ language plpgsql;
+
+
+create or replace function deletelogfunc() returns trigger as $deletehistory$
+begin
+insert into partshistory(pid, pname, color, operation, opwhen, opuser) values (old.pid, old.pname, old.color, 'D', current_timestamp, current_user);
+return old;
+end;
+$deletehistory$ language plpgsql;
+
+create trigger parts_trigger1 after insert on Parts
+for each row execute procedure insertlogfunc();
+
+create trigger parts_trigger2 after delete on Parts
+for each row execute procedure deletelogfunc();
+
+create trigger parts_trigger3 after update on Parts
+for each row execute procedure updatelogfunc();
+
+select * from Parts;
+select * from partshistory;
+
+update Parts set pname = 'k' where pid = 5;
+insert into Parts(pid, pname, color) values (12, 'd', 'yellow');
+delete from Parts where pid = 3;
+
+
+drop trigger parts_trigger1 on Parts;
+drop trigger parts_trigger2 on Parts;
+drop trigger parts_trigger3 on Parts;
+
+drop table Parts;
+drop table partshistory;
+
+
+
+
+
+
+
+create or replace function historylogfunc() returns trigger as $history$
+begin
+if (tg_op = 'INSERT') then
+insert into partshistory(pid, pname, color, operation, opwhen, opuser) values (new.pid, new.pname, new.color, 'I', current_timestamp, current_user);
+return new;
+elsif (tg_op = 'DELETE') then
+insert into partshistory(pid, pname, color, operation, opwhen, opuser) values (old.pid, old.pname, old.color, 'D', current_timestamp, current_user);
+return old;
+elsif (tg_op = 'UPDATE') then
+insert into partshistory(pid, pname, color, operation, opwhen, opuser) values (new.pid, new.pname, new.color, 'U', current_timestamp, current_user);
+return new;
+end if;
+return null;
+end;
+$history$ language plpgsql;
+	
+create trigger parts_trigger after insert or delete or update on Parts
+for each row execute procedure historylogfunc();
+
+
+drop table Parts;
+drop table partshistory;
+drop trigger parts_trigger on Parts;
+
+select * from Parts;
+select * from partshistory;
